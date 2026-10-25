@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { database } from '../lib/firebase';
 import { ref, onValue, update, push } from 'firebase/database';
-import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sun, Moon, Sparkles } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sun, Sparkles } from 'lucide-react';
 
 const INITIAL_SCHEDULE = {
   Pirmadienis: [
@@ -44,7 +44,7 @@ const INITIAL_SCHEDULE = {
 };
 
 export default function Home() {
-  const [role, setRole] = useState(null); // 'crew' arba 'observer'
+  const [role, setRole] = useState(null); 
   const [teamName, setTeamName] = useState('Grupė 1');
   const [workerNames, setWorkerNames] = useState('');
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -52,9 +52,8 @@ export default function Home() {
   const [statuses, setStatuses] = useState({});
   const [logs, setLogs] = useState([]);
   const [selectedDay, setSelectedDay] = useState('Pirmadienis');
-  const [activeTab, setActiveTab] = useState('routes'); // 'routes' arba 'live'
+  const [activeTab, setActiveTab] = useState('routes'); 
 
-  // Gyvas laikrodis
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString('lt-LT'));
@@ -62,7 +61,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Firebase duomenys
   useEffect(() => {
     const statusRef = ref(database, 'statuses');
     onValue(statusRef, (snapshot) => {
@@ -119,8 +117,8 @@ export default function Home() {
     push(ref(database, 'logs'), newLog);
   };
 
-  // Procentų skaičiavimas pasirinktai dienai
   const calculateProgress = (dayKey) => {
+    if (dayKey === 'Rodyti Visus') return 0;
     const items = INITIAL_SCHEDULE[dayKey] || [];
     if (items.length === 0) return 0;
     const completed = items.filter(item => statuses[item.id]?.status === 'Atlikta').length;
@@ -190,7 +188,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Jei neaktyvi sesija arba nori prisijungti */}
+        {/* Prisijungimo kortelė, jei sesija neaktyvi */}
         {!isSessionActive ? (
           <div className="bg-gradient-to-b from-[#131b2e] to-[#0f172a] p-6 sm:p-8 rounded-3xl border border-slate-800/80 shadow-2xl space-y-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -249,10 +247,10 @@ export default function Home() {
             </form>
           </div>
         ) : activeTab === 'live' ? (
-          /* Gyvas žurnalas */
+          /* Gyvo stebėjimo žurnalas */
           <div className="bg-[#131b2e] border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
             <h3 className="font-bold text-base text-white flex items-center gap-2">
-              <Clock className="w-5 h-5 text-emerald-400" /> Gyvas Veiksmų Žurnalas (Realiu lauku)
+              <Clock className="w-5 h-5 text-emerald-400" /> Gyvas Veiksmų Žurnalas (Realiu laiku)
             </h3>
             <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
               {logs.length === 0 ? (
@@ -278,19 +276,19 @@ export default function Home() {
           /* Maršrutų ir dienų vaizdas */
           <div className="space-y-6">
             
-            {/* Dienų pasirinkimo mygtukai */}
+            {/* Dienų pasirinkimo juosta */}
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-emerald-400" /> Pasirinkite dieną
                 </span>
                 <span className="text-[11px] bg-emerald-500/10 text-emerald-400 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                  Šiandien aktifus
+                  Šiandien (Aktyvus)
                 </span>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {['Pirmadienis', 'Antradienis', 'Trečiadienis', 'Ketvirtadienis', 'Penktadienis'].map(day => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                {['Pirmadienis', 'Antradienis', 'Trečiadienis', 'Ketvirtadienis', 'Penktadienis', 'Rodyti Visus'].map(day => (
                   <button
                     key={day}
                     onClick={() => setSelectedDay(day)}
@@ -307,97 +305,104 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Pasirinktos dienos kortelė */}
-            <div className="bg-[#131b2e] border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-800">
-                <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    {selectedDay} <span className="text-xs font-normal text-slate-400">({INITIAL_SCHEDULE[selectedDay]?.length || 0} objektai)</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Pažymėkite objektą prieš išvykdami, kad kitos grupės matytų statusą.</p>
-                </div>
-                
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <button 
-                    onClick={() => alert('Objektų pridėjimo funkcija')}
-                    className="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" /> Pridėti Objektą
-                  </button>
-                </div>
-              </div>
+            {/* Atvaizdavimas pagal dieną (-as) */}
+            {(selectedDay === 'Rodyti Visus' ? Object.entries(INITIAL_SCHEDULE) : [[selectedDay, INITIAL_SCHEDULE[selectedDay]]]).map(([dayName, items]) => {
+              const progress = calculateProgress(dayName);
+              return (
+                <div key={dayName} className="bg-[#131b2e] border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-6 mb-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-800">
+                    <div>
+                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        {dayName} <span className="text-xs font-normal text-slate-400">({items?.length || 0} objektai)</span>
+                      </h2>
+                      <p className="text-xs text-slate-400 mt-0.5">Pažymėkite objektą prieš išvykdami, kad kitos grupės matytų statusą.</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <button 
+                        onClick={() => alert('Objektų pridėjimo funkcija')}
+                        className="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" /> Pridėti Objektą
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Proceso juosta */}
-              <div className="space-y-2 bg-[#0b0f19] p-4 rounded-2xl border border-slate-800/80">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-slate-400">Dienos atlikimo eiga</span>
-                  <span className="text-emerald-400 font-mono font-bold">{calculateProgress(selectedDay)}%</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
-                    style={{ width: `${calculateProgress(selectedDay)}%` }}
-                  ></div>
-                </div>
-              </div>
+                  {/* Proceso juosta */}
+                  {dayName !== 'Rodyti Visus' && (
+                    <div className="space-y-2 bg-[#0b0f19] p-4 rounded-2xl border border-slate-800/80">
+                      <div className="flex justify-between text-xs font-medium">
+                        <span className="text-slate-400">Dienos atlikimo eiga</span>
+                        <span className="text-emerald-400 font-mono font-bold">{progress}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Objektų sąrašas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {INITIAL_SCHEDULE[selectedDay]?.map(item => {
-                  const st = statuses[item.id] || { status: 'Laukia' };
-                  return (
-                    <div key={item.id} className={`p-4 rounded-2xl border transition flex flex-col justify-between gap-3 ${
-                      item.highlight ? 'border-rose-500/40 bg-rose-950/10' : 'border-slate-800 bg-[#0b0f19]'
-                    }`}>
-                      <div className="flex justify-between items-start gap-2">
-                        <div>
-                          <span className={`font-semibold text-sm ${item.highlight ? 'text-rose-400' : 'text-white'}`}>
-                            {item.name}
-                          </span>
-                          {st.updatedBy && (
-                            <p className="text-[11px] text-slate-400 mt-1 font-mono">
-                              ⏱️ {st.updatedAt} — <span className="text-emerald-400">{st.updatedBy}</span>
-                            </p>
+                  {/* Objektų sąrašas */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {items?.map(item => {
+                      const st = statuses[item.id] || { status: 'Laukia' };
+                      return (
+                        <div key={item.id} className={`p-4 rounded-2xl border transition flex flex-col justify-between gap-3 ${
+                          item.highlight ? 'border-rose-500/40 bg-rose-950/10' : 'border-slate-800 bg-[#0b0f19]'
+                        }`}>
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <span className={`font-semibold text-sm ${item.highlight ? 'text-rose-400' : 'text-white'}`}>
+                                {item.name}
+                              </span>
+                              {st.updatedBy && (
+                                <p className="text-[11px] text-slate-400 mt-1 font-mono">
+                                  ⏱️ {st.updatedAt} — <span className="text-emerald-400">{st.updatedBy}</span>
+                                </p>
+                              )}
+                            </div>
+                            
+                            <span className={`text-[11px] px-2.5 py-1 rounded-lg font-mono font-semibold uppercase tracking-wider shrink-0 ${
+                              st.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              st.status === 'Važiuoja' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                              'bg-slate-800 text-slate-400 border border-slate-700/50'
+                            }`}>
+                              {st.status}
+                            </span>
+                          </div>
+
+                          {/* Valdymo mygtukai ekipažui */}
+                          {role === 'crew' ? (
+                            <div className="flex gap-2 pt-1 border-t border-slate-800/80">
+                              <button
+                                onClick={() => updateStatus(item.id, item.name, dayName, 'Važiuoja')}
+                                className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs py-2 rounded-xl border border-amber-500/20 font-semibold transition flex items-center justify-center gap-1.5"
+                              >
+                                <Truck className="w-3.5 h-3.5" /> Važiuoja
+                              </button>
+                              <button
+                                onClick={() => updateStatus(item.id, item.name, dayName, 'Atlikta')}
+                                className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs py-2 rounded-xl border border-emerald-500/20 font-semibold transition flex items-center justify-center gap-1.5"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Atlikta
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-slate-500 italic pt-1 border-t border-slate-800/80 flex items-center justify-between">
+                              <span>Režimas: Stebėtojas</span>
+                              <span>(Įveskite vardą, kad žymėtumėte)</span>
+                            </div>
                           )}
                         </div>
-                        
-                        <span className={`text-[11px] px-2.5 py-1 rounded-lg font-mono font-semibold uppercase tracking-wider shrink-0 ${
-                          st.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          st.status === 'Važiuoja' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                          'bg-slate-800 text-slate-400 border border-slate-700/50'
-                        }`}>
-                          {st.status}
-                        </span>
-                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
 
-                      {/* Valdymo mygtukai ekipažui */}
-                      {role === 'crew' ? (
-                        <div className="flex gap-2 pt-1 border-t border-slate-800/80">
-                          <button
-                            onClick={() => updateStatus(item.id, item.name, selectedDay, 'Važiuoja')}
-                            className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs py-2 rounded-xl border border-amber-500/20 font-semibold transition flex items-center justify-center gap-1.5"
-                          >
-                            <Truck className="w-3.5 h-3.5" /> Važiuoja
-                          </button>
-                          <button
-                            onClick={() => updateStatus(item.id, item.name, selectedDay, 'Atlikta')}
-                            className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs py-2 rounded-xl border border-emerald-500/20 font-semibold transition flex items-center justify-center gap-1.5"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Atlikta
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-[11px] text-slate-500 italic pt-1 border-t border-slate-800/80 flex items-center justify-between">
-                          <span>Režimas: Stebėtojas</span>
-                          <span>(Prisijunkite kaip ekipažas, kad galėtumėte žymėti)</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-            </div>
           </div>
         )}
 
