@@ -1,20 +1,9 @@
-import './globals.css'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-export const metadata = {
-  title: 'Šeimos Verslas - Teritorijų Grafikas',
-  description: 'Realaus laiko užduočių sekimo sistema',
-}
-
-export default function RootLayout({ children }) {
-  return (
-    <html lang="lt">
-      <head>
-        {/* Įkrauname Tailwind CSS tiesiogiai, kad stiliai veiktų be jokių konfigūracijos klaidų */}
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body className="bg-[#0b0f19] text-slate-100 antialiased">
-        {children}
-      </body>
-    </html>
-  )
+body {
+  background-color: #0f172a;
+  color: #f8fafc;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
