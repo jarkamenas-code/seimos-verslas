@@ -1,3 +1,5 @@
+import './page.js'
+
 export const metadata = {
   title: 'Šeimos Verslas - Teritorijų Grafikas',
   description: 'Realaus laiko užduočių sekimo sistema',
