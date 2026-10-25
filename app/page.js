@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { database } from '../lib/firebase';
-import { ref, onValue, update, push } from 'firebase/database';
-import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sun, Sparkles } from 'lucide-react';
+import { ref, onValue, update, remove, push } from 'firebase/database';
+import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sun, Sparkles, RotateCcw } from 'lucide-react';
 
 const INITIAL_SCHEDULE = {
   Pirmadienis: [
@@ -66,6 +66,7 @@ export default function Home() {
     onValue(statusRef, (snapshot) => {
       const data = snapshot.val();
       if (data) setStatuses(data);
+      else setStatuses({});
     });
 
     const logsRef = ref(database, 'logs');
@@ -74,6 +75,8 @@ export default function Home() {
       if (data) {
         const parsedLogs = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
         setLogs(parsedLogs);
+      } else {
+        setLogs([]);
       }
     });
   }, []);
@@ -112,6 +115,29 @@ export default function Home() {
       objName,
       day,
       status: newStatus,
+      workerInfo: fullWorkerInfo
+    };
+    push(ref(database, 'logs'), newLog);
+  };
+
+  // Funkcija atstatyti / ištrinti objekto statusą, jei paspausta netyčia
+  const resetStatus = (objId, objName, day) => {
+    if (role !== 'crew') return;
+
+    // Pašaliname statusą iš Firebase
+    remove(ref(database, `statuses/${objId}`));
+
+    // Pridedame į žurnalą įrašą apie atšaukimą
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('lt-LT');
+    const fullWorkerInfo = `${teamName} (${workerNames})`;
+
+    const newLog = {
+      timestamp: Date.now(),
+      timeStr,
+      objName,
+      day,
+      status: 'Atšaukta / Laukia',
       workerInfo: fullWorkerInfo
     };
     push(ref(database, 'logs'), newLog);
@@ -263,7 +289,9 @@ export default function Home() {
                       <span className="text-slate-400">{log.workerInfo}</span> pažymėjo <strong className="text-white">{log.objName}</strong> ({log.day})
                     </span>
                     <span className={`px-2.5 py-1 rounded-lg font-semibold uppercase tracking-wider ${
-                      log.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      log.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                      log.status === 'Atšaukta / Laukia' ? 'bg-slate-800 text-slate-400 border border-slate-700' :
+                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                     }`}>
                       {log.status}
                     </span>
@@ -348,6 +376,8 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {items?.map(item => {
                       const st = statuses[item.id] || { status: 'Laukia' };
+                      const isAciveStatus = st.status !== 'Laukia';
+
                       return (
                         <div key={item.id} className={`p-4 rounded-2xl border transition flex flex-col justify-between gap-3 ${
                           item.highlight ? 'border-rose-500/40 bg-rose-950/10' : 'border-slate-800 bg-[#0b0f19]'
@@ -364,13 +394,26 @@ export default function Home() {
                               )}
                             </div>
                             
-                            <span className={`text-[11px] px-2.5 py-1 rounded-lg font-mono font-semibold uppercase tracking-wider shrink-0 ${
-                              st.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                              st.status === 'Važiuoja' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                              'bg-slate-800 text-slate-400 border border-slate-700/50'
-                            }`}>
-                              {st.status}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[11px] px-2.5 py-1 rounded-lg font-mono font-semibold uppercase tracking-wider shrink-0 ${
+                                st.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                st.status === 'Važiuoja' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                'bg-slate-800 text-slate-400 border border-slate-700/50'
+                              }`}>
+                                {st.status}
+                              </span>
+
+                              {/* Atstatymo / Ištrynimo mygtukas, jei objektas pažymėtas ir esate ekipažas */}
+                              {role === 'crew' && isAciveStatus && (
+                                <button
+                                  onClick={() => resetStatus(item.id, item.name, dayName)}
+                                  title="Atstatyti / Ištrinti statusą"
+                                  className="p-1 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                           {/* Valdymo mygtukai ekipažui */}
