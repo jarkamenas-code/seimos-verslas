@@ -1,4 +1,4 @@
-import './page.js'
+import './globals.css'
 
 export const metadata = {
   title: 'Šeimos Verslas - Teritorijų Grafikas',
