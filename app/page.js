@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { database } from '../lib/firebase';
 import { ref, onValue, update, remove, push, set, onDisconnect } from 'firebase/database';
-import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sparkles, RotateCcw, Shield, Zap, Flame, Compass, Activity, UserCheck, Radio, Camera, CheckSquare, Home, Building2, AlertTriangle } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sparkles, RotateCcw, Shield, Zap, Flame, Compass, Activity, UserCheck, Radio, Camera, CheckSquare, Home } from 'lucide-react';
 
 const INITIAL_SCHEDULE = {
   Pirmadienis: [
@@ -11,39 +11,33 @@ const INITIAL_SCHEDULE = {
     { id: 'v2', name: 'Vėtrungių g. — 2 laiptinė (Skundas)', isVetrunges: true },
     { id: 'v3', name: 'Vėtrungių g. — 3 laiptinė (Skundas)', isVetrunges: true },
     { id: 'v4', name: 'Vėtrungių g. — 4 laiptinė (Skundas)', isVetrunges: true },
-    { id: 'p2', name: 'Zamenhofas' }, { id: 'p3', name: 'Bajorai' }
+    { id: 'p2', name: 'Zamenhofas' },
+    { id: 'p3', name: 'Bajorai' }, { id: 'p4', name: 'Didlaukis' },
+    { id: 'p5', name: 'Helsinkis' }, { id: 'p6', name: 'Kopenhagas' }
   ],
   Antradienis: [
     { id: 'v5', name: 'Vėtrungių g. — 5 laiptinė (Skundas)', isVetrunges: true },
     { id: 'v6', name: 'Vėtrungių g. — 6 laiptinė (Skundas)', isVetrunges: true },
-    { id: 'a2', name: 'Zamenhofas' }, { id: 'a3', name: 'Paribys' }
+    { id: 'a2', name: 'Zamenhofas' }, { id: 'a3', name: 'Paribys' }, 
+    { id: 'a4', name: 'Malonioji' }, { id: 'a5', name: 'Linkmenys' }
   ],
   Trečiadienis: [
     { id: 'v7', name: 'Vėtrungių g. — 7 laiptinė (Skundas)', isVetrunges: true },
-    { id: 't2', name: 'Zamenhofas' }, { id: 't3', name: 'Elbingas' }
+    { id: 't2', name: 'Zamenhofas' }, { id: 't3', name: 'Elbingas' }, 
+    { id: 't4', name: 'Užubaliai' }, { id: 't5', name: 'Visoriai' }, 
+    { id: 't8', name: 'Kudirkos 3', highlight: true }
   ],
   Ketvirtadienis: [
     { id: 'v8', name: 'Vėtrungių g. — 8 laiptinė (Skundas)', isVetrunges: true },
-    { id: 'k3', name: 'Bajorai' }, { id: 'k4', name: 'Didlaukis' }
+    { id: 'k3', name: 'Bajorai' }, { id: 'k4', name: 'Didlaukis' }, 
+    { id: 'k9', name: 'Vytauto g. 19, Trakai', highlight: true }
   ],
   Penktadienis: [
-    { id: 'v9', name: 'Vėtrungių g. — Bendras kiemas / Skundai', isVetrunges: true },
-    { id: 'pn3', name: 'Paribys' }, { id: 'pn4', name: 'Malonioji' }
+    { id: 'v9', name: 'Vėtrungių g. — Bendras kiemas/skundai', isVetrunges: true },
+    { id: 'pn3', name: 'Paribys' }, { id: 'pn4', name: 'Malonioji' }, 
+    { id: 'pn5', name: 'Linkmenys' }
   ]
 };
-
-// Visos Vėtrungių laiptinės vienoje vietoje atsakingam asmeniui
-const ALL_VETRUNGES_ITEMS = [
-  { id: 'v1', name: 'Vėtrungių g. — 1 laiptinė', day: 'Pirmadienis' },
-  { id: 'v2', name: 'Vėtrungių g. — 2 laiptinė', day: 'Pirmadienis' },
-  { id: 'v3', name: 'Vėtrungių g. — 3 laiptinė', day: 'Pirmadienis' },
-  { id: 'v4', name: 'Vėtrungių g. — 4 laiptinė', day: 'Pirmadienis' },
-  { id: 'v5', name: 'Vėtrungių g. — 5 laiptinė', day: 'Antradienis' },
-  { id: 'v6', name: 'Vėtrungių g. — 6 laiptinė', day: 'Antradienis' },
-  { id: 'v7', name: 'Vėtrungių g. — 7 laiptinė', day: 'Trečiadienis' },
-  { id: 'v8', name: 'Vėtrungių g. — 8 laiptinė', day: 'Ketvirtadienis' },
-  { id: 'v9', name: 'Vėtrungių g. — Bendras kiemas', day: 'Penktadienis' },
-];
 
 const getTeamBadgeStyle = (teamStr) => {
   if (teamStr?.includes('Grupė 2')) {
@@ -119,13 +113,6 @@ export default function Home() {
     }
   };
 
-  const handleVetrungesManagerSession = () => {
-    setRole('vetrunges_manager');
-    setWorkerNames('Vėtrungių Atsakingas Asmuo');
-    setTeamName('Vėtrungių Valdymas');
-    setIsSessionActive(true);
-  };
-
   const handleObserverSession = () => {
     setRole('observer');
     setIsSessionActive(true);
@@ -137,17 +124,17 @@ export default function Home() {
       setMyPresenceRef(null);
     }
     setIsSessionActive(false);
-    setRole(null);
   };
 
   const updateStatus = (objId, objName, day, newStatus) => {
-    if (role !== 'crew' && role !== 'vetrunges_manager') return;
+    if (role !== 'crew') return;
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('lt-LT');
-    const fullWorkerInfo = role === 'vetrunges_manager' ? 'Vėtrungių Atsakingas Asmuo' : `${teamName} (${workerNames})`;
+    const fullWorkerInfo = `${teamName} (${workerNames})`;
 
     const currentObj = statuses[objId] || {};
+
     const statusData = {
       ...currentObj,
       status: newStatus,
@@ -177,7 +164,7 @@ export default function Home() {
       const base64String = reader.result;
       const now = new Date();
       const timeStr = now.toLocaleTimeString('lt-LT');
-      const fullWorkerInfo = role === 'vetrunges_manager' ? 'Vėtrungių Atsakingas Asmuo' : `${teamName} (${workerNames})`;
+      const fullWorkerInfo = `${teamName} (${workerNames})`;
 
       const currentObj = statuses[objId] || {};
       const statusData = {
@@ -206,7 +193,7 @@ export default function Home() {
   const confirmTask = (objId, objName, day) => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('lt-LT');
-    const validatorName = role === 'vetrunges_manager' ? 'Vėtrungių Atsakingas Asmuo' : `${teamName} (${workerNames})`;
+    const validatorName = role === 'crew' ? `${teamName} (${workerNames})` : 'Atsakingas Asmuo / Vadovas';
 
     const currentObj = statuses[objId] || {};
     const statusData = {
@@ -230,11 +217,12 @@ export default function Home() {
   };
 
   const resetStatus = (objId, objName, day) => {
+    if (role !== 'crew') return;
     remove(ref(database, `statuses/${objId}`));
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('lt-LT');
-    const fullWorkerInfo = role === 'vetrunges_manager' ? 'Vėtrungių Atsakingas Asmuo' : `${teamName} (${workerNames})`;
+    const fullWorkerInfo = `${teamName} (${workerNames})`;
 
     const newLog = {
       timestamp: Date.now(),
@@ -289,17 +277,7 @@ export default function Home() {
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
               }`}
             >
-              <Compass className="w-4 h-4" /> Maršrutai
-            </button>
-            <button 
-              onClick={() => setActiveTab('vetrunges_hub')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeTab === 'vetrunges_hub' 
-                  ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-md shadow-cyan-900/30' 
-                  : 'text-cyan-400 hover:text-white hover:bg-cyan-950/40 border border-cyan-500/30'
-              }`}
-            >
-              <Building2 className="w-4 h-4" /> Vėtrungių Skundai
+              <Compass className="w-4 h-4" /> Vėtrungės / Maršrutai
             </button>
             <button 
               onClick={() => setActiveTab('live')}
@@ -352,8 +330,8 @@ export default function Home() {
                 <UserCheck className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">Prisijunkite prie sistemos</h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Pasirinkite ekipažo prisijungimą arba išskirtinį Vėtrungių objekto vadovo valdymą.</p>
+                <h2 className="text-lg font-bold text-white">Prisijunkite prie ekipažo sesijos</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Įveskite savo vardą, kad galėtumėte kelti skundų nuotraukas ir tvarkyti laiptines.</p>
               </div>
             </div>
 
@@ -388,24 +366,16 @@ export default function Home() {
                   type="submit" 
                   className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 px-6 rounded-2xl text-sm transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4" /> Pradėti kaip Ekipažas
+                  <Sparkles className="w-4 h-4" /> Išsaugoti Profilį ir Pradėti
                 </button>
                 <button 
                   type="button"
-                  onClick={handleVetrungesManagerSession}
-                  className="bg-gradient-to-r from-cyan-600 to-teal-700 hover:from-cyan-500 hover:to-teal-600 text-white font-bold py-4 px-6 rounded-2xl text-sm transition shadow-lg shadow-cyan-600/20 flex items-center justify-center gap-2"
+                  onClick={handleObserverSession}
+                  className="bg-[#0f172a] hover:bg-slate-800 text-slate-300 font-semibold py-4 px-6 rounded-2xl text-sm transition border border-slate-800 flex items-center justify-center gap-2"
                 >
-                  <Building2 className="w-4 h-4" /> Vėtrungių Vadovas (Visos laiptinės)
+                  <Eye className="w-4 h-4 text-cyan-400" /> Tik Stebėti (Vadovas)
                 </button>
               </div>
-
-              <button 
-                type="button"
-                onClick={handleObserverSession}
-                className="w-full bg-[#0f172a] hover:bg-slate-800 text-slate-300 font-semibold py-3 px-6 rounded-2xl text-sm transition border border-slate-800 flex items-center justify-center gap-2"
-              >
-                <Eye className="w-4 h-4 text-cyan-400" /> Tik Stebėti
-              </button>
             </form>
           </div>
         ) : activeTab === 'live' ? (
@@ -443,123 +413,10 @@ export default function Home() {
               )}
             </div>
           </div>
-        ) : activeTab === 'vetrunges_hub' ? (
-          /* Specialus Vėtrungių Valdymo Skydelis visoms laiptinėms vienoje vietoje */
-          <div className="bg-[#0f172a]/70 backdrop-blur-xl border border-cyan-500/30 rounded-3xl p-5 sm:p-6 shadow-xl space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-800">
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-cyan-400" /> Vėtrungių Gatvės Visų Laiptinių ir Skundų Valdymas
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Čia matomos visos Vėtrungių laiptinės vienoje vietoje, skundai, įkeltos nuotraukos ir tvarkymo statusas.</p>
-              </div>
-              <button 
-                onClick={() => setActiveTab('routes')}
-                className="bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-semibold py-2.5 px-4 rounded-xl transition"
-              >
-                Grįžti į Maršrutus
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ALL_VETRUNGES_ITEMS.map(item => {
-                const st = statuses[item.id] || { status: 'Laukia' };
-                const isAciveStatus = st.status !== 'Laukia';
-
-                return (
-                  <div key={item.id} className="p-4 rounded-2xl border border-cyan-500/30 bg-[#080d1a] flex flex-col justify-between gap-3 shadow-lg">
-                    <div className="flex justify-between items-start gap-2">
-                      <div>
-                        <span className="font-semibold text-sm text-cyan-300 flex items-center gap-1.5">
-                          <Home className="w-4 h-4 text-cyan-400 shrink-0" /> {item.name}
-                        </span>
-                        <span className="text-[11px] text-slate-500 block mt-0.5">Diena grafike: {item.day}</span>
-                        {st.updatedBy && (
-                          <p className="text-[11px] text-slate-400 mt-1 font-mono">
-                            ⏱️ {st.updatedAt} — <span className="text-emerald-400">{st.updatedBy}</span>
-                          </p>
-                        )}
-                        {st.confirmedBy && (
-                          <p className="text-[11px] text-indigo-400 mt-0.5 font-mono">
-                            ✅ Sutvarkė: {st.confirmedBy} ({st.confirmedAt})
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[11px] px-2.5 py-1 rounded-lg font-mono font-semibold uppercase tracking-wider shrink-0 ${
-                          st.status === 'Sutvarkyta ✅' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
-                          st.status === 'Atlikta' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          st.status === 'Važiuoja' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                          st.status === 'Skundas / Nuotrauka' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
-                          'bg-slate-800 text-slate-400 border border-slate-700/50'
-                        }`}>
-                          {st.status}
-                        </span>
-
-                        {isAciveStatus && (
-                          <button
-                            onClick={() => resetStatus(item.id, item.name, item.day)}
-                            title="Atstatyti / Ištrinti statusą"
-                            className="p-1 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {st.image && (
-                      <div className="mt-2 space-y-1">
-                        <div className="text-[11px] text-slate-400">Skundo nuotrauka įkelta ({st.imageAt}):</div>
-                        <img src={st.image} alt="Skundas" className="w-full h-36 object-cover rounded-xl border border-slate-700 shadow-md" />
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 mt-1">
-                      <label className="flex-1 cursor-pointer bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs py-2 px-3 rounded-xl border border-cyan-500/20 font-semibold transition flex items-center justify-center gap-1.5">
-                        <Camera className="w-3.5 h-3.5" /> {st.image ? 'Keisti nuotrauką' : 'Įkelti skundo nuotrauką'}
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={(e) => handleImageUpload(item.id, item.name, item.day, e)} 
-                        />
-                      </label>
-                    </div>
-
-                    <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updateStatus(item.id, item.name, item.day, 'Važiuoja')}
-                          className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs py-2 rounded-xl border border-amber-500/20 font-semibold transition flex items-center justify-center gap-1"
-                        >
-                          <Truck className="w-3.5 h-3.5" /> Važiuoja
-                        </button>
-                        <button
-                          onClick={() => updateStatus(item.id, item.name, item.day, 'Atlikta')}
-                          className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs py-2 rounded-xl border border-emerald-500/20 font-semibold transition flex items-center justify-center gap-1"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Atlikta
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => confirmTask(item.id, item.name, item.day)}
-                        className="w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs py-2 rounded-xl border border-indigo-500/30 font-semibold transition flex items-center justify-center gap-1.5"
-                      >
-                        <CheckSquare className="w-3.5 h-3.5 text-indigo-400" /> Sutvarkyta ir patvirtinta ✅
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         ) : (
           <div className="space-y-6">
             
-            {role === 'crew' || role === 'vetrunges_manager' ? (
+            {role === 'crew' && (
               <div className="bg-[#0f172a]/80 backdrop-blur-md border border-slate-800 px-4 py-3 rounded-2xl flex items-center justify-between text-xs shadow-md">
                 <div className="flex items-center gap-2.5">
                   <span className={`p-2 rounded-xl border ${getTeamBadgeStyle(teamName).bg}`}>
@@ -577,19 +434,13 @@ export default function Home() {
                   Atsijungti / Keisti
                 </button>
               </div>
-            ) : null}
+            )}
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-400" /> Pasirinkite savaitės dieną
+                  <Calendar className="w-3.5 h-3.5 text-emerald-400" /> Pasirinkite savaitės dieną (Vėtrungių laiptinės ir skundai)
                 </span>
-                <button 
-                  onClick={() => setActiveTab('vetrunges_hub')}
-                  className="text-xs text-cyan-400 font-semibold bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-xl flex items-center gap-1"
-                >
-                  <Building2 className="w-3.5 h-3.5" /> Atidaryti visų Vėtrungių skundų langą ↗
-                </button>
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
@@ -619,7 +470,7 @@ export default function Home() {
                       <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         {dayName} <span className="text-xs font-normal text-slate-400">({items?.length || 0} objektai)</span>
                       </h2>
-                      <p className="text-xs text-slate-400 mt-0.5">Valdykite laiptines, skundus ir nuotraukas.</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Kiekviena Vėtrungių gatvės laiptinė turi savo skundo kortelę ir nuotraukos įkėlimą.</p>
                     </div>
                   </div>
 
@@ -678,7 +529,7 @@ export default function Home() {
                                 {st.status}
                               </span>
 
-                              {isAciveStatus && (
+                              {role === 'crew' && isAciveStatus && (
                                 <button
                                   onClick={() => resetStatus(item.id, item.name, dayName)}
                                   title="Atstatyti / Ištrinti statusą"
@@ -690,48 +541,65 @@ export default function Home() {
                             </div>
                           </div>
 
+                          {/* Nuotraukos peržiūra (skundas / įrodymas) */}
                           {st.image && (
                             <div className="mt-2 space-y-1">
                               <div className="text-[11px] text-slate-400">Nuotrauką įkėlė {st.imageAddedBy} ({st.imageAt}):</div>
-                              <img src={st.image} alt="Skundas" className="w-full h-36 object-cover rounded-xl border border-slate-700 shadow-md" />
+                              <img src={st.image} alt="Skundo nuotrauka" className="w-full h-36 object-cover rounded-xl border border-slate-700 shadow-md" />
                             </div>
                           )}
 
-                          <div className="flex items-center gap-2 mt-1">
-                            <label className="flex-1 cursor-pointer bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs py-2 px-3 rounded-xl border border-cyan-500/20 font-semibold transition flex items-center justify-center gap-1.5">
-                              <Camera className="w-3.5 h-3.5" /> {st.image ? 'Keisti nuotrauką' : 'Pridėti skundo nuotrauką'}
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => handleImageUpload(item.id, item.name, dayName, e)} 
-                              />
-                            </label>
-                          </div>
+                          {/* Nuotraukos įkėlimas */}
+                          {role === 'crew' && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <label className="flex-1 cursor-pointer bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs py-2 px-3 rounded-xl border border-cyan-500/20 font-semibold transition flex items-center justify-center gap-1.5">
+                                <Camera className="w-3.5 h-3.5" /> {st.image ? 'Atnaujinti skundo nuotrauką' : 'Pridėti skundo nuotrauką'}
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  onChange={(e) => handleImageUpload(item.id, item.name, dayName, e)} 
+                                />
+                              </label>
+                            </div>
+                          )}
 
-                          <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                            <div className="flex gap-2">
+                          {/* Mygtukai */}
+                          {role === 'crew' ? (
+                            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => updateStatus(item.id, item.name, dayName, 'Važiuoja')}
+                                  className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs py-2 rounded-xl border border-amber-500/20 font-semibold transition flex items-center justify-center gap-1"
+                                >
+                                  <Truck className="w-3.5 h-3.5" /> Važiuoja
+                                </button>
+                                <button
+                                  onClick={() => updateStatus(item.id, item.name, dayName, 'Atlikta')}
+                                  className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs py-2 rounded-xl border border-emerald-500/20 font-semibold transition flex items-center justify-center gap-1"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Atlikta
+                                </button>
+                              </div>
+
                               <button
-                                onClick={() => updateStatus(item.id, item.name, dayName, 'Važiuoja')}
-                                className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs py-2 rounded-xl border border-amber-500/20 font-semibold transition flex items-center justify-center gap-1"
+                                onClick={() => confirmTask(item.id, item.name, dayName)}
+                                className="w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs py-2 rounded-xl border border-indigo-500/30 font-semibold transition flex items-center justify-center gap-1.5"
                               >
-                                <Truck className="w-3.5 h-3.5" /> Važiuoja
-                              </button>
-                              <button
-                                onClick={() => updateStatus(item.id, item.name, dayName, 'Atlikta')}
-                                className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs py-2 rounded-xl border border-emerald-500/20 font-semibold transition flex items-center justify-center gap-1"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Atlikta
+                                <CheckSquare className="w-3.5 h-3.5 text-indigo-400" /> Sutvarkyta ir patvirtinta ✅
                               </button>
                             </div>
-
-                            <button
-                              onClick={() => confirmTask(item.id, item.name, dayName)}
-                              className="w-full bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs py-2 rounded-xl border border-indigo-500/30 font-semibold transition flex items-center justify-center gap-1.5"
-                            >
-                              <CheckSquare className="w-3.5 h-3.5 text-indigo-400" /> Sutvarkyta ir patvirtinta ✅
-                            </button>
-                          </div>
+                          ) : (
+                            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                              <span className="text-[11px] text-slate-500 italic">Režimas: Stebėtojas</span>
+                              <button
+                                onClick={() => confirmTask(item.id, item.name, dayName)}
+                                className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs py-1.5 px-3 rounded-xl border border-indigo-500/30 font-semibold transition flex items-center gap-1"
+                              >
+                                <CheckSquare className="w-3.5 h-3.5 text-indigo-400" /> Patvirtinti sutvarkymą ✅
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
