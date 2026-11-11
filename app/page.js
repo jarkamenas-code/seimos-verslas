@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { database } from '../lib/firebase';
 import { ref, onValue, update, remove, push } from 'firebase/database';
-import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sun, Sparkles, RotateCcw, ListChecks } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, Users, Calendar, Eye, Plus, Sun, Sparkles, RotateCcw, ListChecks, CheckSquare, Square } from 'lucide-react';
 
 const INITIAL_SCHEDULE = {
   Pirmadienis: [
@@ -152,7 +152,9 @@ export default function Home() {
     const timeStr = now.toLocaleTimeString('lt-LT');
     const fullWorkerInfo = `${teamName} (${workerNames})`;
 
+    const currentObj = statuses[objId] || {};
     const statusData = {
+      ...currentObj,
       status: newStatus,
       updatedAt: timeStr,
       updatedBy: fullWorkerInfo
@@ -169,6 +171,33 @@ export default function Home() {
       workerInfo: fullWorkerInfo
     };
     push(ref(database, 'logs'), newLog);
+  };
+
+  // Funkcija pažymėti arba atšMesti atskirą smulkų darbą
+  const toggleSubTask = (objId, objName, day, stepIndex) => {
+    if (role !== 'crew') return;
+
+    const currentObj = statuses[objId] || {};
+    const completedTasks = currentObj.completedTasks || {};
+    const isDone = !completedTasks[stepIndex];
+
+    const updatedTasks = {
+      ...completedTasks,
+      [stepIndex]: isDone
+    };
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('lt-LT');
+    const fullWorkerInfo = `${teamName} (${workerNames})`;
+
+    const statusData = {
+      ...currentObj,
+      completedTasks: updatedTasks,
+      updatedAt: timeStr,
+      updatedBy: fullWorkerInfo
+    };
+
+    update(ref(database, `statuses/${objId}`), statusData);
   };
 
   const resetStatus = (objId, objName, day) => {
@@ -391,7 +420,7 @@ export default function Home() {
                       <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         {dayName} <span className="text-xs font-normal text-slate-400">({items?.length || 0} objektai)</span>
                       </h2>
-                      <p className="text-xs text-slate-400 mt-0.5">Kiekvienas objektas turi savo tvarkymo struktūrą ir eigą.</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Spustelėkite ant smulkių darbų, kad juos pažymėtumėte kaip atliktus.</p>
                     </div>
                   </div>
 
@@ -414,8 +443,9 @@ export default function Home() {
                   {/* Objektų sąrašas */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {items?.map(item => {
-                      const st = statuses[item.id] || { status: 'Laukia' };
+                      const st = statuses[item.id] || { status: 'Laukia', completedTasks: {} };
                       const isAciveStatus = st.status !== 'Laukia';
+                      const completedTasks = st.completedTasks || {};
 
                       return (
                         <div key={item.id} className={`p-4 rounded-2xl border transition flex flex-col justify-between gap-3 ${
@@ -427,20 +457,37 @@ export default function Home() {
                                 {item.name}
                               </span>
 
-                              {/* Tvarkymo struktūra / schema kortelėje */}
+                              {/* PASPAUDŽIAMI smulkūs darbai kortelėje */}
                               {item.structure && (
-                                <div className="mt-2 p-2.5 rounded-xl bg-[#060913] border border-slate-800/80 space-y-1">
+                                <div className="mt-2.5 p-3 rounded-xl bg-[#060913] border border-slate-800/80 space-y-1.5">
                                   <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold flex items-center gap-1">
-                                    <ListChecks className="w-3 h-3" /> Tvarkymo struktūra:
+                                    <ListChecks className="w-3.5 h-3.5" /> Smulkūs darbai (spustelėkite, kad atliktumėte):
                                   </span>
-                                  <ul className="space-y-1 text-xs text-slate-300">
-                                    {item.structure.map((step, idx) => (
-                                      <li key={idx} className="flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                        {step}
-                                      </li>
-                                    ))}
-                                  </ul>
+                                  <div className="space-y-1.5 pt-1">
+                                    {item.structure.map((step, idx) => {
+                                      const isDone = !!completedTasks[idx];
+                                      return (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          disabled={role !== 'crew'}
+                                          onClick={() => toggleSubTask(item.id, item.name, dayName, idx)}
+                                          className={`w-full text-left text-xs p-2 rounded-lg border transition flex items-center gap-2 ${
+                                            isDone 
+                                              ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300 line-through' 
+                                              : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                                          }`}
+                                        >
+                                          {isDone ? (
+                                            <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                                          ) : (
+                                            <Square className="w-4 h-4 text-slate-500 shrink-0" />
+                                          )}
+                                          <span>{step}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               )}
 
